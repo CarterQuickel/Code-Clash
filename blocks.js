@@ -5,7 +5,7 @@ module.exports = [
         dropdown: false,
         type: "control",
         follower: "",
-        cost: 1
+        cost: 0
     },
     {
         name: "move", 
