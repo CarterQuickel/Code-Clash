@@ -9,10 +9,10 @@ module.exports = [
     },
     {
         name: "move", 
-        input: true,
-        dropdown: false,
+        input: false,
+        dropdown: true,
         type: "movement",
-        follower: "spaces",
+        follower: "space",
         cost: 1
     },
     {

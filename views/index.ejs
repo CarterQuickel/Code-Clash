@@ -15,12 +15,14 @@
       <div class="blocksCont">
         <% blocks.forEach((block, index) => { %>
             <div class="block <%= block.type %> <%= block.name %>">
-              <span class="ticks" aria-label="Cost: <%= block.cost %>">
-                <% for (let tick = 0; tick < block.cost; tick += 1) { %>
-                  <span class="tick" aria-hidden="true">&bull;</span>
-                <% } %>
+                <span class="ticks" aria-label="Cost: <%= block.cost %>">
+                    <% for (let tick = 0; tick < block.cost; tick += 1) { %>
+                    <span class="tick" aria-hidden="true">&bull;</span>
+                    <% } %>
                 </span>
-                <div><%= block.name %></div><input type="text" inputmode="numeric" pattern="[0-9]*" aria-label="<%= block.name %> <%= block.follower %>" style="display: <%= block.input ? 'flex' : 'none' %>"><div><%= block.follower %></div>
+                <div><%= block.name %></div>
+                <input type="text" inputmode="numeric" pattern="[0-9]*" aria-label="<%= block.name %> <%= block.follower %>" style="display: <%= block.input ? 'flex' : 'none' %>">
+                <div><%= block.follower %></div>
             </div>
         <% }); %>
       </div>
