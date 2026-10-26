@@ -10,20 +10,58 @@
   <body>
     <main class="card">
         <div class="leftSide">
-            <div class="blockMatt"></div>
+            <div class="blockMatt">
+              <div class="remove">remove</div>
+            </div>
         </div>
       <div class="blocksCont">
-        <% blocks.forEach((block, index) => { %>
+          <% const blockGroups = blocks.reduce((groups, block) => {
+            let group = groups.find((item) => item.type === block.type);
+            if (!group) {
+              group = { type: block.type, blocks: [] };
+              groups.push(group);
+            }
+            group.blocks.push(block);
+            return groups;
+          }, []); %>
+          <% blockGroups.forEach((group) => { %>
+            <section class="block-category" aria-labelledby="category-<%= group.type %>">
+              <h2 id="category-<%= group.type %>" class="block-category-title"><%= group.type %></h2>
+              <div class="block-category-items">
+                <% group.blocks.forEach((block) => { %>
             <div class="block <%= block.type %> <%= block.name %>">
+                <div class="block-header">
                 <span class="ticks" aria-label="Cost: <%= block.cost %>">
                     <% for (let tick = 0; tick < block.cost; tick += 1) { %>
                     <span class="tick" aria-hidden="true">&bull;</span>
                     <% } %>
                 </span>
+                <% if (block.type === 'operator') { %>
+                <div class="variable-input operand-input" role="group" aria-label="Left value for <%= block.name %>"></div>
+                <span class="operator-symbol" aria-label="<%= block.name %>"><%= block.name %></span>
+                <div class="variable-input operand-input" role="group" aria-label="Right value for <%= block.name %>"></div>
+                <% } else { %>
                 <div><%= block.name %></div>
+                <% } %>
+                <select class="dropdown" style="display: <%= block.dropdown ? 'flex' : 'none' %>">
+                  <option value="left">90</option>
+                  <option value="right">-90</option>
+                  <option value="180">180</option>
+                </select>
+                <% if (block.name === 'if' || block.name === 'wait until') { %>
+                <div class="variable-input expression-input" role="group" aria-label="Drop a variable or operator into the if condition"></div>
+                <% } else { %>
                 <input type="text" inputmode="numeric" pattern="[0-9]*" aria-label="<%= block.name %> <%= block.follower %>" style="display: <%= block.input ? 'flex' : 'none' %>">
+                <% } %>
                 <div><%= block.follower %></div>
+                </div>
+                <% if (block.type === 'wrap') { %>
+                <div class="wrap-contents" aria-label="Blocks inside <%= block.name %>"></div>
+                <% } %>
             </div>
+              <% }); %>
+            </div>
+          </section>
         <% }); %>
       </div>
     </main>

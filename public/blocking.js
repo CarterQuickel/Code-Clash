@@ -12,6 +12,7 @@ if (palette && workspace) {
   let draggedGroup = [];
   let newBlock = true;
   let snapTarget = null;
+  const blockHeights = new WeakMap();
 
   const findSnapTarget = (clientX, clientY) => {
     let closest = null;
@@ -31,6 +32,45 @@ if (palette && workspace) {
     });
 
     return closestDistance <= 100 ? closest : null;
+  };
+
+  const findExpressionInput = (clientX, clientY) => {
+    const isOperator = draggedBlock?.classList.contains('operator');
+    const containsPoint = (input) => {
+      const rect = input.getBoundingClientRect();
+      return clientX >= rect.left && clientX <= rect.right
+        && clientY >= rect.top && clientY <= rect.bottom;
+    };
+
+    if (isOperator) {
+      return Array.from(workspace.querySelectorAll('.expression-input')).find(containsPoint) || null;
+    }
+
+    const operandInput = Array.from(workspace.querySelectorAll('.operand-input')).find(containsPoint);
+    if (operandInput) return operandInput;
+
+    return Array.from(workspace.querySelectorAll('.expression-input')).find((input) => (
+      !input.querySelector('.operator') && containsPoint(input)
+    )) || null;
+  };
+
+  const findWrapDropTarget = (clientX, clientY) => {
+    return Array.from(workspace.querySelectorAll('.wrap-contents')).find((container) => {
+      if (draggedBlock?.contains(container)) return false;
+      const rect = container.getBoundingClientRect();
+      return clientX >= rect.left && clientX <= rect.right
+        && clientY >= rect.top && clientY <= rect.bottom;
+    }) || null;
+  };
+
+  const findRemoveTarget = (clientX, clientY) => {
+    const removeTarget = workspace.querySelector('.remove');
+    if (!removeTarget) return null;
+    const rect = removeTarget.getBoundingClientRect();
+    return clientX >= rect.left && clientX <= rect.right
+      && clientY >= rect.top && clientY <= rect.bottom
+      ? removeTarget
+      : null;
   };
 
   const updateSnapTarget = (target) => {
@@ -55,6 +95,44 @@ if (palette && workspace) {
     });
   };
 
+  const observeBlockHeight = (block) => {
+    blockHeights.set(block, block.offsetHeight);
+    blockResizeObserver.observe(block);
+  };
+
+  const blockResizeObserver = new ResizeObserver((entries) => {
+    entries.forEach(({ target }) => {
+      const previousHeight = blockHeights.get(target);
+      const currentHeight = target.offsetHeight;
+      if (previousHeight === undefined || previousHeight === currentHeight) return;
+
+      const heightChange = currentHeight - previousHeight;
+      if (target.parentElement === workspace) {
+        const nextBlocks = Array.from(workspace.querySelectorAll(':scope > .block'))
+          .filter((block) => block !== target && block.offsetLeft === target.offsetLeft
+            && block.offsetTop >= target.offsetTop + previousHeight - 2)
+          .sort((first, second) => first.offsetTop - second.offsetTop);
+
+        nextBlocks.forEach((block) => {
+          block.style.top = `${Math.max(0, block.offsetTop + heightChange)}px`;
+        });
+      }
+      blockHeights.set(target, currentHeight);
+    });
+  });
+
+  const workspaceBlockObserver = new MutationObserver((mutations) => {
+    mutations.forEach((mutation) => {
+      mutation.addedNodes.forEach((node) => {
+        if (!(node instanceof HTMLElement)) return;
+        if (node.matches('.block')) observeBlockHeight(node);
+        node.querySelectorAll('.block').forEach(observeBlockHeight);
+      });
+    });
+  });
+  workspaceBlockObserver.observe(workspace, { childList: true, subtree: true });
+  workspace.querySelectorAll('.block').forEach(observeBlockHeight);
+
   palette.addEventListener('dragstart', (event) => {
     const block = event.target.closest('.block');
     if (!block) return;
@@ -68,6 +146,12 @@ if (palette && workspace) {
     if (!block) return;
     draggedBlock = block;
     newBlock = false;
+    if (block.classList.contains('variable')) {
+      draggedGroup = [block];
+      event.dataTransfer.effectAllowed = 'move';
+      event.dataTransfer.setData('text/plain', block.textContent.trim());
+      return;
+    }
     draggedGroup = [block];
 
     const sameColumn = Array.from(workspace.querySelectorAll(':scope > .block'))
@@ -95,12 +179,99 @@ if (palette && workspace) {
   workspace.addEventListener('dragend', clearDraggedBlock);
   workspace.addEventListener('dragover', (event) => {
     event.preventDefault();
+    const removeTarget = findRemoveTarget(event.clientX, event.clientY);
+    if (removeTarget) {
+      event.dataTransfer.dropEffect = newBlock ? 'none' : 'move';
+      updateSnapTarget(newBlock ? null : removeTarget);
+      return;
+    }
+    if (draggedBlock?.matches('.variable, .operator')) {
+      const input = findExpressionInput(event.clientX, event.clientY);
+      const wrapTarget = input ? null : findWrapDropTarget(event.clientX, event.clientY);
+      const canDropOnWorkspace = draggedBlock.matches('.variable, .operator');
+      event.dataTransfer.dropEffect = input || wrapTarget || !newBlock || canDropOnWorkspace
+        ? (newBlock ? 'copy' : 'move')
+        : 'none';
+      updateSnapTarget(input || wrapTarget);
+      return;
+    }
     event.dataTransfer.dropEffect = newBlock ? 'copy' : 'move';
-    updateSnapTarget(findSnapTarget(event.clientX, event.clientY));
+    updateSnapTarget(findWrapDropTarget(event.clientX, event.clientY)
+      || findSnapTarget(event.clientX, event.clientY));
   });
   workspace.addEventListener('drop', (event) => {
     event.preventDefault();
     if (!draggedBlock) return;
+    const removeTarget = findRemoveTarget(event.clientX, event.clientY);
+    if (removeTarget) {
+      updateSnapTarget(null);
+      if (!newBlock) {
+        const removedBlock = draggedBlock;
+        const parent = removedBlock.parentElement;
+        const oldTop = removedBlock.offsetTop;
+        const oldLeft = removedBlock.offsetLeft;
+        const oldHeight = removedBlock.offsetHeight;
+        removedBlock.remove();
+
+        if (parent === workspace) {
+          workspace.querySelectorAll(':scope > .block').forEach((block) => {
+            if (block.offsetLeft === oldLeft && block.offsetTop > oldTop) {
+              block.style.top = `${Math.max(0, block.offsetTop - oldHeight)}px`;
+            }
+          });
+        }
+        updateStackingOrder();
+      }
+      draggedBlock = null;
+      draggedGroup = [];
+      return;
+    }
+    if (draggedBlock.matches('.variable, .operator')) {
+      const input = findExpressionInput(event.clientX, event.clientY);
+      const wrapTarget = input ? null : findWrapDropTarget(event.clientX, event.clientY);
+      updateSnapTarget(null);
+      const canDropOnWorkspace = draggedBlock.matches('.variable, .operator');
+      if (!input && !wrapTarget && newBlock && !canDropOnWorkspace) return;
+
+      const variableBlock = newBlock ? draggedBlock.cloneNode(true) : draggedBlock;
+      variableBlock.draggable = true;
+      if (input) {
+        variableBlock.style.position = 'relative';
+        variableBlock.style.left = '';
+        variableBlock.style.top = '';
+        input.replaceChildren(variableBlock);
+      } else if (wrapTarget) {
+        variableBlock.style.position = 'relative';
+        variableBlock.style.left = '';
+        variableBlock.style.top = '';
+        wrapTarget.appendChild(variableBlock);
+      } else {
+        const bounds = workspace.getBoundingClientRect();
+        variableBlock.style.position = 'absolute';
+        variableBlock.style.left = `${Math.max(0, event.clientX - bounds.left + workspace.scrollLeft - variableBlock.offsetWidth / 2)}px`;
+        variableBlock.style.top = `${Math.max(0, event.clientY - bounds.top + workspace.scrollTop - variableBlock.offsetHeight / 2)}px`;
+        workspace.appendChild(variableBlock);
+      }
+      updateStackingOrder();
+      draggedBlock = null;
+      draggedGroup = [];
+      return;
+    }
+    const wrapTarget = findWrapDropTarget(event.clientX, event.clientY);
+    if (wrapTarget) {
+      updateSnapTarget(null);
+      const nestedBlock = newBlock ? draggedBlock.cloneNode(true) : draggedBlock;
+      nestedBlock.style.position = 'relative';
+      nestedBlock.style.left = '';
+      nestedBlock.style.top = '';
+      nestedBlock.style.zIndex = '';
+      nestedBlock.draggable = true;
+      wrapTarget.appendChild(nestedBlock);
+      updateStackingOrder();
+      draggedBlock = null;
+      draggedGroup = [];
+      return;
+    }
     const block = newBlock ? draggedBlock.cloneNode(true) : draggedBlock;
     const movingBlocks = newBlock ? [block] : draggedGroup;
     const originalLeft = draggedBlock.offsetLeft;

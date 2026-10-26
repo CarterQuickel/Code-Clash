@@ -10,14 +10,14 @@ module.exports = [
     {
         name: "move", 
         input: false,
-        dropdown: true,
+        dropdown: false,
         type: "movement",
         follower: "",
         cost: 1
     },
     {
         name: "rotate",
-        input: true,
+        input: false,
         dropdown: true,
         type: "movement",
         follower: "degrees",
@@ -28,20 +28,28 @@ module.exports = [
         input: true,
         dropdown: false,
         type: "control",
-        follower: "seconds",
+        follower: "actions",
         cost: 1
     },
     {
         name: "repeat",
         input: true,
-        dropdown: true,
+        dropdown: false,
         type: "wrap",
         follower: "times",
+        cost: 0
+    },
+    {
+        name: "if",
+        input: true,
+        dropdown: false,
+        type: "wrap",
+        follower: "",
         cost: 1
     },
     {
-        name: "forever",
-        input: false,
+        name: "wait until",
+        input: true,
         dropdown: false,
         type: "wrap",
         follower: "",
@@ -62,5 +70,69 @@ module.exports = [
         type: "action",
         follower: "",
         cost: 2
-    }
+    },
+    {
+        name: "self-destruct",
+        input: false,
+        dropdown: false,
+        type: "action",
+        follower: "",
+        cost: 3
+    },
+    {
+        name: "shield",
+        input: false,
+        dropdown: false,
+        type: "action",
+        follower: "",
+        cost: 3
+    },
+    {
+        name: "damage received",
+        input: false,
+        dropdown: false,
+        type: "variable",
+        follower: "",
+        cost: 0
+    },
+    {
+        name: "health",
+        input: false,
+        dropdown: false,
+        type: "variable",
+        follower: "",
+        cost: 0
+    },
+    {
+        name: "",
+        input: true,
+        dropdown: false,
+        type: "variable",
+        follower: "",
+        cost: 0
+    },
+    {
+        name: ">",
+        input: false,
+        dropdown: false,
+        type: "operator",
+        follower: "",
+        cost: 0
+    },
+    {
+        name: "<",
+        input: false,
+        dropdown: false,
+        type: "operator",
+        follower: "",
+        cost: 0
+    },
+    {
+        name: "=",
+        input: false,
+        dropdown: false,
+        type: "operator",
+        follower: "",
+        cost: 0
+    },
 ]

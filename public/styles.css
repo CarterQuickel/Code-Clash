@@ -1,5 +1,27 @@
 * {
   box-sizing: border-box;
+  user-select: none;
+}
+
+.blocksCont::-webkit-scrollbar {
+  width: 6px;
+}
+
+.blocksCont::-webkit-scrollbar-track {
+  background: transparent; 
+}
+
+/* 3. The Dot Handle */
+.blocksCont::-webkit-scrollbar-thumb {
+  background-color: #6c6e72;
+  border-radius: 10px;  
+  border: 4px solid transparent; 
+  cursor: pointer;
+}
+
+/* Hover state */
+.blocksCont::-webkit-scrollbar-thumb:hover {
+  background-color: #37383b;
 }
 
 body {
@@ -34,10 +56,35 @@ h1 {
 }
 
 .blocksCont {
+    padding-right: 10px;
     display: flex;
     flex-direction: column;
     gap: 20px;
-    height: 100%;
+    max-height: 650px;
+    overflow-y: auto;
+}
+
+.block-category {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.block-category-title {
+    margin: 0;
+    margin-bottom: 10px;
+    color: #aebbd1;
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    line-height: 1;
+    text-transform: uppercase;
+}
+
+.block-category-items {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
 }
 
 .block {
@@ -51,17 +98,59 @@ h1 {
     align-items: center;
     cursor: grab;
     min-width: 230px;
-    user-select: none;
     position: relative;
+}
+
+.block-header {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 10px;
+    min-height: 30px;
+}
+
+.block.wrap {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+}
+
+.block.wrap > .wrap-contents {
+    min-height: 34px;
+    margin-left: 14px;
+    padding: 6px 6px 6px 14px;
+    border-left: 3px solid #f4d48b;
+    display: flex;
+    flex-direction: column;
+    transition: background-color 0.15s ease, border-color 0.15s ease;
+    background-color: #151b29dd;
+    border-radius: 5px;
+    border: 2px solid #151b29dd;
+    position: relative;
+}
+
+.block.wrap > .wrap-contents.snap-target {
+    border-left-color: #fff;
+    background-color: #ffffff12;
+}
+
+.wrap-contents > .block {
+    position: relative;
+    left: auto !important;
+    top: auto !important;
+    width: fit-content;
+    max-width: 100%;
+    z-index: auto !important;
+}
+
+.blocksCont .wrap-contents {
+    display: none;
 }
 
 .block.start {
     border-top-left-radius: 20px;
     border-top-right-radius: 20px;
-}
-
-.block.action {
-    height: 100px;
 }
 
 .ticks {
@@ -88,7 +177,7 @@ h1 {
     border-color: #fff;
 }
 
-.block::before {
+.block:not(.variable)::before {
     content: '';
     position: absolute;
     width: 40px;
@@ -101,7 +190,7 @@ h1 {
     border: 2px solid #151b29dd;
 }
 
-.block:not(.start)::after {
+.block:not(.start, .variable)::after {
     content: '';
     width: 40px;
     height: 8px;
@@ -120,6 +209,59 @@ h1 {
     border-radius: 10px;
     border: none;
     padding: 10px;
+}
+
+.variable-input {
+    min-width: 118px;
+    min-height: 20px;
+    padding: 2px;
+    border: 2px dashed #ffffff;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.variable-input:has(> .block) {
+    border-color: transparent;
+}
+
+.variable-input.snap-target {
+    outline: 2px solid #fff;
+    outline-offset: 2px;
+    background-color: #ffffff20;
+}
+
+.variable-input > .block.variable {
+    min-width: 0;
+    cursor: grab;
+}
+
+.block.operator::before,
+.block.operator::after {
+    display: none;
+}
+
+.block.operator .operand-input {
+    min-width: 54px;
+    min-height: 20px;
+}
+
+.expression-input > .block.operator .operand-input {
+    min-width: 48px;
+}
+
+.block .dropdown {
+    width: 80px;
+    padding: 0px 10px 0px 16px;
+    height: 30px;
+    font-size: 12px;
+    color: #1f2937;
+    background-color: #ffffff;
+    border: 1px solid #d1d5db;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: all 0.2s ease;
 }
 
 .block.movement {
@@ -162,6 +304,29 @@ h1 {
     border-color: rgb(105, 9, 101);
 }
 
+.block.operator {
+    background-color: rgb(45, 155, 50) !important;
+    border: 2px solid rgb(9, 105, 25);
+    border-radius: 100px; 
+    corner-shape: bevel; 
+    height: 50px;
+}
+
+.block.variable {
+    background-color: rgb(240, 116, 14) !important;
+    border: 2px solid rgb(182, 64, 9);
+    border-radius: 100px;
+    height: 40px;
+}
+
+.block.operato {
+    background-color: rgb(45, 155, 50) !important;
+    border: 2px solid rgb(9, 105, 25);
+    border-radius: 100px; 
+    corner-shape: bevel; 
+    height: 40px;
+}
+
 .block.held {
     position: fixed;
     top: 0;
@@ -182,4 +347,22 @@ h1 {
     width: 100%;
     height: 100%;
     border-radius: 24px;
+}
+
+.remove {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    margin: 10px;
+    color: rgb(241, 98, 98);
+    padding: 12px 16px;
+    border: 3px dotted rgb(241, 98, 98);
+    border-radius: 100px;
+    transition: background-color 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease;
+}
+
+.remove.snap-target {
+    background-color: #f1626230;
+    box-shadow: 0 0 0 4px #f1626240;
+    transform: scale(1.05);
 }
