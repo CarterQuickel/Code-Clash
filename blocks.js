@@ -12,7 +12,7 @@ module.exports = [
         input: false,
         dropdown: true,
         type: "movement",
-        follower: "space",
+        follower: "",
         cost: 1
     },
     {
