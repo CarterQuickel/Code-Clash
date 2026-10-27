@@ -56,6 +56,14 @@ module.exports = [
         cost: 1
     },
     {
+        name: "repeat until",
+        input: true,
+        dropdown: false,
+        type: "wrap",
+        follower: "",
+        cost: 1
+    },
+    {
         name: "fire",
         input: false,
         dropdown: false,
@@ -89,6 +97,22 @@ module.exports = [
     },
     {
         name: "damage received",
+        input: false,
+        dropdown: false,
+        type: "variable",
+        follower: "",
+        cost: 0
+    },
+    {
+        name: "ammo",
+        input: false,
+        dropdown: false,
+        type: "variable",
+        follower: "",
+        cost: 0
+    },
+    {
+        name: "enemy distance",
         input: false,
         dropdown: false,
         type: "variable",
@@ -134,5 +158,29 @@ module.exports = [
         type: "operator",
         follower: "",
         cost: 0
+    },
+    {
+        name: "and",
+        input: false,
+        dropdown: false,
+        type: "operator",
+        follower: "",
+        cost: 0
+    },
+    {
+        name: "reload",
+        input: false,
+        dropdown: false,
+        type: "action",
+        follower: "",
+        cost: 0
+    },
+    {
+        name: "place mine",
+        input: false,
+        dropdown: false,
+        type: "action",
+        follower: "",
+        cost: 2
     },
 ]

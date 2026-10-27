@@ -10,12 +10,24 @@
   <body>
     <main class="card">
         <div class="leftSide">
+          <div class="workspace-frame" data-action-limit="10">
             <div class="blockMatt">
-              <div class="remove">remove</div>
+              <div class="workspace-canvas"></div>
             </div>
+              <div class="actions-counter" aria-live="polite" aria-atomic="true">
+                Actions: <span class="actions-used">0</span> / 10
+              </div>
+              <div class="remove">
+                <img src="/icons/trash_can.png" width="20" height="20" alt="">
+              </div>
+              <div class="zoom-controls" role="group" aria-label="Workspace zoom">
+                <button class="zoom-out" type="button" aria-label="Zoom out" title="Zoom out">−</button>
+                <output class="zoom-level" aria-live="polite">100%</output>
+                <button class="zoom-in" type="button" aria-label="Zoom in" title="Zoom in">+</button>
+              </div>
+          </div>
         </div>
-      <div class="blocksCont">
-          <% const blockGroups = blocks.reduce((groups, block) => {
+      <% const blockGroups = blocks.reduce((groups, block) => {
             let group = groups.find((item) => item.type === block.type);
             if (!group) {
               group = { type: block.type, blocks: [] };
@@ -24,8 +36,19 @@
             group.blocks.push(block);
             return groups;
           }, []); %>
+      <div class="palette-panel">
+        <nav class="block-category-nav" aria-label="Block categories">
           <% blockGroups.forEach((group) => { %>
-            <section class="block-category" aria-labelledby="category-<%= group.type %>">
+            <button class="category-nav-button <%= group.type %>" type="button"
+              data-category="<%= group.type %>" aria-controls="blocks-<%= group.type %>">
+              <span class="category-nav-dot" aria-hidden="true"></span>
+              <span><%= group.type %></span>
+            </button>
+          <% }); %>
+        </nav>
+        <div class="blocksCont">
+          <% blockGroups.forEach((group) => { %>
+            <section id="blocks-<%= group.type %>" class="block-category" aria-labelledby="category-<%= group.type %>">
               <h2 id="category-<%= group.type %>" class="block-category-title"><%= group.type %></h2>
               <div class="block-category-items">
                 <% group.blocks.forEach((block) => { %>
@@ -48,7 +71,7 @@
                   <option value="right">-90</option>
                   <option value="180">180</option>
                 </select>
-                <% if (block.name === 'if' || block.name === 'wait until') { %>
+                <% if (block.name === 'if' || block.name === 'wait until' || block.name === 'repeat until') { %>
                 <div class="variable-input expression-input" role="group" aria-label="Drop a variable or operator into the if condition"></div>
                 <% } else { %>
                 <input type="text" inputmode="numeric" pattern="[0-9]*" aria-label="<%= block.name %> <%= block.follower %>" style="display: <%= block.input ? 'flex' : 'none' %>">
@@ -63,6 +86,7 @@
             </div>
           </section>
         <% }); %>
+      </div>
       </div>
     </main>
   </body>

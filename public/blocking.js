@@ -1,5 +1,53 @@
 const palette = document.querySelector('.blocksCont');
 const workspace = document.querySelector('.blockMatt');
+const workspaceFrame = document.querySelector('.workspace-frame');
+const workspaceCanvas = document.querySelector('.workspace-canvas');
+const categoryNav = document.querySelector('.block-category-nav');
+
+const setActiveCategory = (categoryId) => {
+  if (!categoryNav) return;
+  categoryNav.querySelectorAll('.category-nav-button').forEach((button) => {
+    if (button.dataset.category === categoryId) {
+      button.setAttribute('aria-current', 'true');
+    } else {
+      button.removeAttribute('aria-current');
+    }
+  });
+};
+
+const updateActiveCategoryFromScroll = () => {
+  if (!palette || !categoryNav) return;
+  const sections = Array.from(palette.querySelectorAll('.block-category'));
+  if (!sections.length) return;
+
+  const atBottom = palette.scrollTop + palette.clientHeight >= palette.scrollHeight - 2;
+  const paletteTop = palette.getBoundingClientRect().top;
+  let activeSection = sections[0];
+
+  if (atBottom) {
+    activeSection = sections[sections.length - 1];
+  } else {
+    sections.forEach((section) => {
+      if (section.getBoundingClientRect().top <= paletteTop + 40) activeSection = section;
+    });
+  }
+
+  setActiveCategory(activeSection.id.replace(/^blocks-/, ''));
+};
+
+categoryNav?.addEventListener('click', (event) => {
+  const button = event.target.closest('.category-nav-button');
+  if (!button) return;
+  const category = document.getElementById(`blocks-${button.dataset.category}`);
+  if (!category || !palette) return;
+
+  category.scrollIntoView({ behavior: 'smooth', block: 'start', inline: 'nearest' });
+  setActiveCategory(button.dataset.category);
+});
+
+palette?.addEventListener('scroll', updateActiveCategoryFromScroll, { passive: true });
+window.addEventListener('resize', updateActiveCategoryFromScroll);
+updateActiveCategoryFromScroll();
 
 document.addEventListener('input', (event) => {
   if (event.target.matches('.block input')) {
@@ -7,18 +55,53 @@ document.addEventListener('input', (event) => {
   }
 });
 
-if (palette && workspace) {
+if (palette && workspace && workspaceFrame && workspaceCanvas) {
   let draggedBlock = null;
   let draggedGroup = [];
   let newBlock = true;
   let snapTarget = null;
+  let zoomScale = 1;
+  const actionsCounter = workspaceFrame.querySelector('.actions-counter');
+  const actionsUsed = actionsCounter?.querySelector('.actions-used');
+  const actionLimit = Number(workspaceFrame.dataset.actionLimit) || 10;
   const blockHeights = new WeakMap();
+  const zoomLevel = workspaceFrame.querySelector('.zoom-level');
+
+  const updateZoom = (nextScale) => {
+    const centerX = (workspace.scrollLeft + workspace.clientWidth / 2) / zoomScale;
+    const centerY = (workspace.scrollTop + workspace.clientHeight / 2) / zoomScale;
+    zoomScale = Math.min(2, Math.max(0.5, Math.round(nextScale * 10) / 10));
+    workspaceCanvas.style.transform = `scale(${zoomScale})`;
+    workspaceCanvas.style.width = `${100 / zoomScale}%`;
+    workspaceCanvas.style.height = `${100 / zoomScale}%`;
+    if (zoomLevel) zoomLevel.textContent = `${Math.round(zoomScale * 100)}%`;
+    workspace.scrollLeft = Math.max(0, centerX * zoomScale - workspace.clientWidth / 2);
+    workspace.scrollTop = Math.max(0, centerY * zoomScale - workspace.clientHeight / 2);
+  };
+
+  workspaceFrame.querySelector('.zoom-in')?.addEventListener('click', () => {
+    updateZoom(zoomScale + 0.1);
+  });
+  workspaceFrame.querySelector('.zoom-out')?.addEventListener('click', () => {
+    updateZoom(zoomScale - 0.1);
+  });
+
+  const updateActionsCounter = () => {
+    if (!actionsCounter || !actionsUsed) return;
+    const total = Array.from(workspace.querySelectorAll('.block')).reduce((sum, block) => {
+      const ticks = block.querySelector(':scope > .block-header > .ticks');
+      return sum + (ticks?.childElementCount || 0);
+    }, 0);
+    actionsUsed.textContent = String(total);
+    actionsCounter.classList.toggle('over-limit', total > actionLimit);
+    actionsCounter.setAttribute('aria-label', `Actions used: ${total} of ${actionLimit}`);
+  };
 
   const findSnapTarget = (clientX, clientY) => {
     let closest = null;
     let closestDistance = Infinity;
 
-    workspace.querySelectorAll(':scope > .block').forEach((block) => {
+    workspaceCanvas.querySelectorAll(':scope > .block').forEach((block) => {
       if (draggedGroup.includes(block)) return;
       const rect = block.getBoundingClientRect();
       const horizontalDistance = Math.max(rect.left - clientX, 0, clientX - rect.right);
@@ -41,30 +124,59 @@ if (palette && workspace) {
       return clientX >= rect.left && clientX <= rect.right
         && clientY >= rect.top && clientY <= rect.bottom;
     };
+    const findDeepestInput = (selector) => Array.from(workspace.querySelectorAll(selector))
+      .filter(containsPoint)
+      .sort((first, second) => {
+        const depth = (element) => {
+          let current = element;
+          let count = 0;
+          while (current && current !== workspace) {
+            count += 1;
+            current = current.parentElement;
+          }
+          return count;
+        };
+        const depthDifference = depth(second) - depth(first);
+        if (depthDifference !== 0) return depthDifference;
+        const firstRect = first.getBoundingClientRect();
+        const secondRect = second.getBoundingClientRect();
+        return (firstRect.width * firstRect.height) - (secondRect.width * secondRect.height);
+      })[0] || null;
 
     if (isOperator) {
-      return Array.from(workspace.querySelectorAll('.expression-input')).find(containsPoint) || null;
+      return findDeepestInput('.expression-input, .operand-input');
     }
 
-    const operandInput = Array.from(workspace.querySelectorAll('.operand-input')).find(containsPoint);
+    const operandInput = findDeepestInput('.operand-input');
     if (operandInput) return operandInput;
 
-    return Array.from(workspace.querySelectorAll('.expression-input')).find((input) => (
-      !input.querySelector('.operator') && containsPoint(input)
-    )) || null;
+    return findDeepestInput('.expression-input:not(:has(.operator))');
   };
 
   const findWrapDropTarget = (clientX, clientY) => {
-    return Array.from(workspace.querySelectorAll('.wrap-contents')).find((container) => {
-      if (draggedBlock?.contains(container)) return false;
-      const rect = container.getBoundingClientRect();
-      return clientX >= rect.left && clientX <= rect.right
-        && clientY >= rect.top && clientY <= rect.bottom;
-    }) || null;
+    return Array.from(workspace.querySelectorAll('.wrap-contents'))
+      .filter((container) => {
+        if (draggedBlock?.contains(container)) return false;
+        const rect = container.getBoundingClientRect();
+        return clientX >= rect.left && clientX <= rect.right
+          && clientY >= rect.top && clientY <= rect.bottom;
+      })
+      .sort((first, second) => {
+        const depth = (element) => {
+          let current = element;
+          let count = 0;
+          while (current && current !== workspace) {
+            count += 1;
+            current = current.parentElement;
+          }
+          return count;
+        };
+        return depth(second) - depth(first);
+      })[0] || null;
   };
 
   const findRemoveTarget = (clientX, clientY) => {
-    const removeTarget = workspace.querySelector('.remove');
+    const removeTarget = workspaceFrame.querySelector('.remove');
     if (!removeTarget) return null;
     const rect = removeTarget.getBoundingClientRect();
     return clientX >= rect.left && clientX <= rect.right
@@ -81,7 +193,7 @@ if (palette && workspace) {
 
   const updateStackingOrder = () => {
     const columns = new Map();
-    workspace.querySelectorAll(':scope > .block').forEach((block) => {
+    workspaceCanvas.querySelectorAll(':scope > .block').forEach((block) => {
       const column = columns.get(block.offsetLeft) || [];
       column.push(block);
       columns.set(block.offsetLeft, column);
@@ -107,8 +219,8 @@ if (palette && workspace) {
       if (previousHeight === undefined || previousHeight === currentHeight) return;
 
       const heightChange = currentHeight - previousHeight;
-      if (target.parentElement === workspace) {
-        const nextBlocks = Array.from(workspace.querySelectorAll(':scope > .block'))
+      if (target.parentElement === workspaceCanvas) {
+        const nextBlocks = Array.from(workspaceCanvas.querySelectorAll(':scope > .block'))
           .filter((block) => block !== target && block.offsetLeft === target.offsetLeft
             && block.offsetTop >= target.offsetTop + previousHeight - 2)
           .sort((first, second) => first.offsetTop - second.offsetTop);
@@ -130,8 +242,8 @@ if (palette && workspace) {
       });
     });
   });
-  workspaceBlockObserver.observe(workspace, { childList: true, subtree: true });
-  workspace.querySelectorAll('.block').forEach(observeBlockHeight);
+  workspaceBlockObserver.observe(workspaceCanvas, { childList: true, subtree: true });
+  workspaceCanvas.querySelectorAll('.block').forEach(observeBlockHeight);
 
   palette.addEventListener('dragstart', (event) => {
     const block = event.target.closest('.block');
@@ -153,8 +265,13 @@ if (palette && workspace) {
       return;
     }
     draggedGroup = [block];
+    if (block.parentElement !== workspaceCanvas) {
+      event.dataTransfer.effectAllowed = 'move';
+      event.dataTransfer.setData('text/plain', block.textContent.trim());
+      return;
+    }
 
-    const sameColumn = Array.from(workspace.querySelectorAll(':scope > .block'))
+    const sameColumn = Array.from(workspaceCanvas.querySelectorAll(':scope > .block'))
       .filter((candidate) => candidate.offsetLeft === block.offsetLeft)
       .sort((first, second) => first.offsetTop - second.offsetTop);
     const blockIndex = sameColumn.indexOf(block);
@@ -177,8 +294,14 @@ if (palette && workspace) {
   };
   palette.addEventListener('dragend', clearDraggedBlock);
   workspace.addEventListener('dragend', clearDraggedBlock);
-  workspace.addEventListener('dragover', (event) => {
+  workspaceFrame.addEventListener('dragover', (event) => {
     event.preventDefault();
+    if (newBlock && draggedBlock?.classList.contains('start')
+      && workspaceCanvas.querySelector('.block.start')) {
+      event.dataTransfer.dropEffect = 'none';
+      updateSnapTarget(null);
+      return;
+    }
     const removeTarget = findRemoveTarget(event.clientX, event.clientY);
     if (removeTarget) {
       event.dataTransfer.dropEffect = newBlock ? 'none' : 'move';
@@ -199,24 +322,29 @@ if (palette && workspace) {
     updateSnapTarget(findWrapDropTarget(event.clientX, event.clientY)
       || findSnapTarget(event.clientX, event.clientY));
   });
-  workspace.addEventListener('drop', (event) => {
+  workspaceFrame.addEventListener('drop', (event) => {
     event.preventDefault();
     if (!draggedBlock) return;
+    if (newBlock && draggedBlock.classList.contains('start')
+      && workspaceCanvas.querySelector('.block.start')) return;
     const removeTarget = findRemoveTarget(event.clientX, event.clientY);
     if (removeTarget) {
       updateSnapTarget(null);
       if (!newBlock) {
-        const removedBlock = draggedBlock;
-        const parent = removedBlock.parentElement;
-        const oldTop = removedBlock.offsetTop;
-        const oldLeft = removedBlock.offsetLeft;
-        const oldHeight = removedBlock.offsetHeight;
-        removedBlock.remove();
+        const removedBlocks = draggedGroup.length ? draggedGroup : [draggedBlock];
+        const parent = removedBlocks[0].parentElement;
+        const oldLeft = removedBlocks[0].offsetLeft;
+        const oldTop = Math.min(...removedBlocks.map((block) => block.offsetTop));
+        const oldBottom = Math.max(...removedBlocks.map((block) => (
+          block.offsetTop + block.offsetHeight
+        )));
+        const removedHeight = oldBottom - oldTop;
+        removedBlocks.forEach((block) => block.remove());
 
-        if (parent === workspace) {
-          workspace.querySelectorAll(':scope > .block').forEach((block) => {
+        if (parent === workspaceCanvas) {
+          workspaceCanvas.querySelectorAll(':scope > .block').forEach((block) => {
             if (block.offsetLeft === oldLeft && block.offsetTop > oldTop) {
-              block.style.top = `${Math.max(0, block.offsetTop - oldHeight)}px`;
+              block.style.top = `${Math.max(0, block.offsetTop - removedHeight)}px`;
             }
           });
         }
@@ -248,9 +376,9 @@ if (palette && workspace) {
       } else {
         const bounds = workspace.getBoundingClientRect();
         variableBlock.style.position = 'absolute';
-        variableBlock.style.left = `${Math.max(0, event.clientX - bounds.left + workspace.scrollLeft - variableBlock.offsetWidth / 2)}px`;
-        variableBlock.style.top = `${Math.max(0, event.clientY - bounds.top + workspace.scrollTop - variableBlock.offsetHeight / 2)}px`;
-        workspace.appendChild(variableBlock);
+        variableBlock.style.left = `${Math.max(0, (event.clientX - bounds.left + workspace.scrollLeft) / zoomScale - variableBlock.offsetWidth / 2)}px`;
+        variableBlock.style.top = `${Math.max(0, (event.clientY - bounds.top + workspace.scrollTop) / zoomScale - variableBlock.offsetHeight / 2)}px`;
+        workspaceCanvas.appendChild(variableBlock);
       }
       updateStackingOrder();
       draggedBlock = null;
@@ -274,11 +402,19 @@ if (palette && workspace) {
     }
     const block = newBlock ? draggedBlock.cloneNode(true) : draggedBlock;
     const movingBlocks = newBlock ? [block] : draggedGroup;
-    const originalLeft = draggedBlock.offsetLeft;
-    const originalTop = draggedBlock.offsetTop;
     const bounds = workspace.getBoundingClientRect();
-    let left = event.clientX - bounds.left + workspace.scrollLeft - block.offsetWidth / 2;
-    let top = event.clientY - bounds.top + workspace.scrollTop - block.offsetHeight / 2;
+    const isNestedBlock = !newBlock && draggedBlock.parentElement !== workspaceCanvas;
+    const draggedRect = draggedBlock.getBoundingClientRect();
+    const originalLeft = isNestedBlock
+      ? (draggedRect.left - bounds.left + workspace.scrollLeft) / zoomScale
+      : draggedBlock.offsetLeft;
+    const originalTop = isNestedBlock
+      ? (draggedRect.top - bounds.top + workspace.scrollTop) / zoomScale
+      : draggedBlock.offsetTop;
+    let left = (event.clientX - bounds.left + workspace.scrollLeft) / zoomScale
+      - block.offsetWidth / 2;
+    let top = (event.clientY - bounds.top + workspace.scrollTop) / zoomScale
+      - block.offsetHeight / 2;
     const nearestBlock = findSnapTarget(event.clientX, event.clientY);
     updateSnapTarget(null);
 
@@ -296,6 +432,17 @@ if (palette && workspace) {
     const deltaLeft = left - originalLeft;
     const deltaTop = top - originalTop;
     movingBlocks.forEach((movingBlock) => {
+      if (isNestedBlock) {
+        const rect = movingBlock.getBoundingClientRect();
+        const currentLeft = (rect.left - bounds.left + workspace.scrollLeft) / zoomScale;
+        const currentTop = (rect.top - bounds.top + workspace.scrollTop) / zoomScale;
+        workspaceCanvas.appendChild(movingBlock);
+        movingBlock.style.position = 'absolute';
+        movingBlock.style.left = `${Math.max(0, currentLeft + deltaLeft)}px`;
+        movingBlock.style.top = `${Math.max(0, currentTop + deltaTop)}px`;
+        movingBlock.draggable = true;
+        return;
+      }
       movingBlock.style.position = 'absolute';
       movingBlock.style.left = `${Math.max(0, movingBlock.offsetLeft + deltaLeft)}px`;
       movingBlock.style.top = `${Math.max(0, movingBlock.offsetTop + deltaTop)}px`;
@@ -303,10 +450,10 @@ if (palette && workspace) {
     });
     block.style.left = `${left}px`;
     block.style.top = `${top}px`;
-    if (newBlock) workspace.appendChild(block);
+    if (newBlock) workspaceCanvas.appendChild(block);
 
     if (nearestBlock) {
-      const column = Array.from(workspace.querySelectorAll(':scope > .block'))
+      const column = Array.from(workspaceCanvas.querySelectorAll(':scope > .block'))
         .filter((columnBlock) => columnBlock.offsetLeft === left)
         .filter((columnBlock) => !movingBlocks.includes(columnBlock))
         .sort((first, second) => first.offsetTop - second.offsetTop);
@@ -333,6 +480,9 @@ if (palette && workspace) {
     draggedBlock = null;
     draggedGroup = [];
   });
+  // Recount once the existing drop handler has finished adding, moving, or removing blocks.
+  workspaceFrame.addEventListener('drop', updateActionsCounter);
+  updateActionsCounter();
   palette.querySelectorAll('.block').forEach((block) => {
     block.draggable = true;
   });

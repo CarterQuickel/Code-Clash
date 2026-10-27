@@ -46,6 +46,7 @@ body {
   display: flex;
   flex-direction: row;
   justify-content: space-between;
+    gap: 24px;
 }
 
 h1 {
@@ -55,13 +56,79 @@ h1 {
   line-height: 1.05;
 }
 
+.palette-panel {
+    display: flex;
+    flex: 0 0 30%;
+    min-width: 290px;
+    max-height: 650px;
+    gap: 24px;
+}
+
+.block-category-nav {
+    display: flex;
+    flex: 0 0 94px;
+    flex-direction: column;
+    gap: 8px;
+    overflow-y: auto;
+    padding: 2px 4px 2px 2px;
+}
+
+.category-nav-button {
+    --category-color: #9aa4b2;
+    display: flex;
+    min-height: 40px;
+    align-items: center;
+    gap: 7px;
+    padding: 7px 8px;
+    border: none;
+    border-radius: 10px;
+    color: #e8edf7;
+    background: none;
+    font: inherit;
+    font-size: 0.68rem;
+    font-weight: 700;
+    text-align: left;
+    text-transform: capitalize;
+    cursor: pointer;
+    transition: background-color 0.15s ease, transform 0.15s ease;
+}
+
+.category-nav-button:hover,
+.category-nav-button[aria-current="true"] {
+    background: color-mix(in srgb, var(--category-color) 38%, #151b29);
+    transform: translateX(3px);
+}
+
+.category-nav-dot {
+    flex: 0 0 9px;
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    background: var(--category-color);
+    box-shadow: 0 0 8px color-mix(in srgb, var(--category-color) 55%, transparent);
+}
+
+.category-nav-button.control { --category-color: rgb(194, 182, 14); }
+.category-nav-button.movement { --category-color: rgb(66, 116, 255); }
+.category-nav-button.wrap { --category-color: rgb(224, 155, 28); }
+.category-nav-button.action { --category-color: rgb(166, 66, 212); }
+.category-nav-button.variable { --category-color: rgb(240, 116, 14); }
+.category-nav-button.operator { --category-color: rgb(45, 190, 75); }
+
 .blocksCont {
-    padding-right: 10px;
+    flex: 1 1 auto;
+    min-width: 0;
+    padding: 2px 10px 8px 0;
     display: flex;
     flex-direction: column;
     gap: 20px;
-    max-height: 650px;
+    max-height: 100%;
     overflow-y: auto;
+    scroll-behavior: smooth;
+}
+
+.block-category {
+    scroll-margin-top: 4px;
 }
 
 .block-category {
@@ -243,7 +310,7 @@ h1 {
 }
 
 .block.operator .operand-input {
-    min-width: 54px;
+    min-width: 70px;
     min-height: 20px;
 }
 
@@ -310,6 +377,7 @@ h1 {
     border-radius: 100px; 
     corner-shape: bevel; 
     height: 50px;
+    justify-content: center;
 }
 
 .block.variable {
@@ -319,7 +387,7 @@ h1 {
     height: 40px;
 }
 
-.block.operato {
+.block.operator {
     background-color: rgb(45, 155, 50) !important;
     border: 2px solid rgb(9, 105, 25);
     border-radius: 100px; 
@@ -336,34 +404,155 @@ h1 {
 }
 
 .leftSide {
-    width: 80%;
+    flex: 1 1 auto;
+    min-width: 0;
     height: 100%;
 }
 
-.blockMatt {
+.workspace-frame {
     position: relative;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    border-radius: 24px;
+}
+
+.blockMatt {
+    position: absolute;
+    inset: 0;
     overflow: auto;
     background-color: #0a0d14;
     width: 100%;
     height: 100%;
     border-radius: 24px;
-    overflow: hidden;
+}
+
+.workspace-canvas {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    transform-origin: top left;
+}
+
+.blockMatt::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.blockMatt::-webkit-scrollbar-track {
+  background: transparent; 
+}
+
+/* 3. The Dot Handle */
+.blockMatt::-webkit-scrollbar-thumb {
+  background-color: #6c6e72;
+  border-radius: 10px;  
+  border: 4px solid transparent; 
+  cursor: pointer;
+}
+
+/* Hover state */
+.blockMatt::-webkit-scrollbar-thumb:hover {
+  background-color: #37383b;
+}
+
+.actions-counter {
+    position: absolute;
+    top: 16px;
+    left: 16px;
+    z-index: 1000;
+    padding: 10px 14px;
+    border: 1px solid #ffffff30;
+    border-radius: 12px;
+    color: #e8edf7;
+    background: #151b29e8;
+    font-size: 0.95rem;
+    font-weight: 700;
+    transition: color 0.15s ease, border-color 0.15s ease;
+}
+
+.actions-counter.over-limit {
+    color: #ff626b;
+    border-color: #ff626b;
 }
 
 .remove {
+    display: flex;
+    justify-content: center;
+    align-items: center;
     position: absolute;
     bottom: 0;
     left: 0;
     margin: 10px;
     color: rgb(241, 98, 98);
-    padding: 12px 16px;
+    padding: 16px;
     border: 3px dotted rgb(241, 98, 98);
     border-radius: 100px;
     transition: background-color 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease;
+    z-index: 1000;
 }
 
 .remove.snap-target {
     background-color: #f1626230;
     box-shadow: 0 0 0 4px #f1626240;
     transform: scale(1.05);
+}
+
+.zoom-controls {
+    position: absolute;
+    top: 16px;
+    right: 16px;
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px;
+    border: 1px solid #ffffff30;
+    border-radius: 12px;
+    color: #e8edf7;
+    background: #151b29e8;
+}
+
+.zoom-controls button {
+    width: 34px;
+    height: 34px;
+    border: 1px solid #ffffff30;
+    border-radius: 8px;
+    color: #e8edf7;
+    background: #ffffff12;
+    font: inherit;
+    font-size: 1.25rem;
+    line-height: 1;
+    cursor: pointer;
+}
+
+.zoom-controls button:hover {
+    background: #ffffff2b;
+}
+
+.zoom-level {
+    min-width: 44px;
+    text-align: center;
+    font-size: 0.8rem;
+    font-variant-numeric: tabular-nums;
+}
+
+@media (max-width: 900px) {
+    .card {
+        width: 100%;
+        height: 100%;
+        padding: 20px;
+        gap: 14px;
+    }
+
+    .palette-panel {
+        flex-basis: 38%;
+        min-width: 250px;
+    }
+
+    .block-category-nav {
+        flex-basis: 78px;
+    }
 }
