@@ -21,9 +21,13 @@
                 <img src="/icons/trash_can.png" width="20" height="20" alt="">
               </div>
               <div class="zoom-controls" role="group" aria-label="Workspace zoom">
-                <button class="zoom-out" type="button" aria-label="Zoom out" title="Zoom out">−</button>
+                <button class="zoom-out" type="button" aria-label="Zoom out" title="Zoom out">
+                  <img class="zoomIMG" src="/icons/zoom_out.png" width="20" height="20">
+                </button>
                 <output class="zoom-level" aria-live="polite">100%</output>
-                <button class="zoom-in" type="button" aria-label="Zoom in" title="Zoom in">+</button>
+                <button class="zoom-in" type="button" aria-label="Zoom in" title="Zoom in">
+                  <img class="zoomIMG" src="/icons/zoom_in.png" width="20" height="20">
+                </button>
               </div>
               <aside class="arena-minimap" aria-label="Arena minimap preview">
                 <span class="minimap-label">ARENA PREVIEW</span>
@@ -44,7 +48,6 @@
                     <button class="mode-choice" type="button" data-mode="solo">Single player</button>
                     <button class="mode-choice" type="button" data-mode="duel">Local 2-player</button>
                   </div>
-                  <small>Each tank has 3 health. Action budget starts at 10 and grows by 3 each round.</small>
                 </div>
               </section>
               <section class="arena-screen" hidden aria-label="Tank match">

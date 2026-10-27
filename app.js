@@ -19,7 +19,7 @@ const localIp = Object.values(networkInterfaces)
   .flat()
   .find((address) => address && address.family === 'IPv4' && !address.internal)?.address;
 
-app.listen(port, '172.16.3.173', () => {
+app.listen(port, '192.168.0.5', () => {
   console.log(`Server is running at http://localhost:${port}`);
   if (localIp) console.log(`On your network: http://${localIp}:${port}`);
 });
