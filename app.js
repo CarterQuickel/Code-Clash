@@ -1,5 +1,6 @@
 const express = require('express');
 const path = require('path');
+const os = require('os');
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -13,6 +14,12 @@ app.get('/', (req, res) => {
   res.render('index', { title: 'Crank Your Tank', blocks: blocks });
 });
 
-app.listen(port, () => {
+const networkInterfaces = os.networkInterfaces();
+const localIp = Object.values(networkInterfaces)
+  .flat()
+  .find((address) => address && address.family === 'IPv4' && !address.internal)?.address;
+
+app.listen(port, '172.16.3.173', () => {
   console.log(`Server is running at http://localhost:${port}`);
+  if (localIp) console.log(`On your network: http://${localIp}:${port}`);
 });

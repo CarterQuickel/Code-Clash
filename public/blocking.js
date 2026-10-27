@@ -63,7 +63,7 @@ if (palette && workspace && workspaceFrame && workspaceCanvas) {
   let zoomScale = 1;
   const actionsCounter = workspaceFrame.querySelector('.actions-counter');
   const actionsUsed = actionsCounter?.querySelector('.actions-used');
-  const actionLimit = Number(workspaceFrame.dataset.actionLimit) || 10;
+  let actionLimit = Number(workspaceFrame.dataset.actionLimit) || 10;
   const blockHeights = new WeakMap();
   const zoomLevel = workspaceFrame.querySelector('.zoom-level');
 
@@ -72,8 +72,8 @@ if (palette && workspace && workspaceFrame && workspaceCanvas) {
     const centerY = (workspace.scrollTop + workspace.clientHeight / 2) / zoomScale;
     zoomScale = Math.min(2, Math.max(0.5, Math.round(nextScale * 10) / 10));
     workspaceCanvas.style.transform = `scale(${zoomScale})`;
-    workspaceCanvas.style.width = `${100 / zoomScale}%`;
-    workspaceCanvas.style.height = `${100 / zoomScale}%`;
+    workspaceCanvas.style.width = '100%';
+    workspaceCanvas.style.height = '100%';
     if (zoomLevel) zoomLevel.textContent = `${Math.round(zoomScale * 100)}%`;
     workspace.scrollLeft = Math.max(0, centerX * zoomScale - workspace.clientWidth / 2);
     workspace.scrollTop = Math.max(0, centerY * zoomScale - workspace.clientHeight / 2);
@@ -88,14 +88,38 @@ if (palette && workspace && workspaceFrame && workspaceCanvas) {
 
   const updateActionsCounter = () => {
     if (!actionsCounter || !actionsUsed) return;
-    const total = Array.from(workspace.querySelectorAll('.block')).reduce((sum, block) => {
-      const ticks = block.querySelector(':scope > .block-header > .ticks');
-      return sum + (ticks?.childElementCount || 0);
-    }, 0);
+    const blockCost = (block) => Number(block.dataset.cost) || 0;
+    const ownInput = (block) => Number(block.querySelector(':scope > .block-header input')?.value) || 0;
+    const nestedCost = (container) => Array.from(container.children)
+      .filter((child) => child.matches('.block'))
+      .reduce((sum, child) => sum + blockCostTree(child), 0);
+    const blockCostTree = (block) => {
+      const body = block.querySelector(':scope > .wrap-contents');
+      const childrenCost = body ? nestedCost(body) : 0;
+      if (block.dataset.wrapKind === 'repeat') {
+        return blockCost(block) + childrenCost * Math.max(0, ownInput(block));
+      }
+      return blockCost(block) + childrenCost;
+    };
+    const total = Array.from(workspaceCanvas.children)
+      .filter((block) => block.matches('.block'))
+      .reduce((sum, block) => sum + blockCostTree(block), 0);
     actionsUsed.textContent = String(total);
     actionsCounter.classList.toggle('over-limit', total > actionLimit);
     actionsCounter.setAttribute('aria-label', `Actions used: ${total} of ${actionLimit}`);
   };
+
+  window.codeClashSetActionLimit = (limit) => {
+    actionLimit = limit;
+    workspaceFrame.dataset.actionLimit = String(limit);
+    const limitLabel = actionsCounter?.querySelector('.actions-limit');
+    if (limitLabel) limitLabel.textContent = String(limit);
+    updateActionsCounter();
+  };
+  window.codeClashRefreshActions = updateActionsCounter;
+  document.addEventListener('input', (event) => {
+    if (event.target.matches('.workspace-canvas .block input')) updateActionsCounter();
+  });
 
   const findSnapTarget = (clientX, clientY) => {
     let closest = null;

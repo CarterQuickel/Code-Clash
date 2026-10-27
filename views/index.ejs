@@ -15,7 +15,7 @@
               <div class="workspace-canvas"></div>
             </div>
               <div class="actions-counter" aria-live="polite" aria-atomic="true">
-                Actions: <span class="actions-used">0</span> / 10
+                Actions: <span class="actions-used">0</span> / <span class="actions-limit">10</span>
               </div>
               <div class="remove">
                 <img src="/icons/trash_can.png" width="20" height="20" alt="">
@@ -25,6 +25,51 @@
                 <output class="zoom-level" aria-live="polite">100%</output>
                 <button class="zoom-in" type="button" aria-label="Zoom in" title="Zoom in">+</button>
               </div>
+              <aside class="arena-minimap" aria-label="Arena minimap preview">
+                <span class="minimap-label">ARENA PREVIEW</span>
+                <canvas class="minimap-canvas" width="180" height="104" aria-hidden="true"></canvas>
+              </aside>
+              <div class="editor-controls">
+                <span class="round-label">Round <strong class="round-number">1</strong> of 3</span>
+                <button class="play-match" type="button" disabled>
+                  <img src="/icons/play_flag.png" width="20" height="20"> 
+                </button>
+                <p class="game-message" aria-live="polite">Choose a game mode to begin building your program.</p>
+              </div>
+              <section class="game-setup" aria-labelledby="setup-title">
+                <div class="setup-card">
+                  <p class="eyebrow">THINK. CRANK. CONQUER.</p>
+                  <h1 id="setup-title">Crank Your Tank</h1>
+                  <div class="mode-buttons">
+                    <button class="mode-choice" type="button" data-mode="solo">Single player</button>
+                    <button class="mode-choice" type="button" data-mode="duel">Local 2-player</button>
+                  </div>
+                  <small>Each tank has 3 health. Action budget starts at 10 and grows by 3 each round.</small>
+                </div>
+              </section>
+              <section class="arena-screen" hidden aria-label="Tank match">
+                <header class="arena-header">
+                  <div class="tank-score"><span class="score-name">PLAYER 1</span><strong class="p1-health">3</strong><span>❤</span><span class="match-actions">Actions <strong class="p1-actions">10</strong></span></div>
+                  <div class="arena-round">ROUND <strong class="arena-round-number">1</strong> / 3</div>
+                  <div class="tank-score right"><span class="score-name opponent-name">CPU</span><strong class="p2-health">3</strong><span>❤</span><span class="match-actions">Actions <strong class="p2-actions">10</strong></span></div>
+                </header>
+                <div class="arena-main">
+                  <section class="code-playback player-one-playback" aria-label="Player 1 program">
+                    <h2>Player 1 code</h2>
+                    <div class="code-lines"></div>
+                  </section>
+                  <canvas class="arena-canvas" width="900" height="520" aria-label="Tank arena"></canvas>
+                  <section class="code-playback player-two-playback" aria-label="Player 2 program">
+                    <h2>Player 2 code</h2>
+                    <div class="code-lines"></div>
+                  </section>
+                </div>
+                <footer class="arena-footer">
+                  <p class="arena-status" aria-live="polite">Ready</p>
+                  <button class="next-round" type="button" hidden>Next round (+3 actions)</button>
+                  <button class="back-to-code" type="button" hidden>Edit code</button>
+                </footer>
+              </section>
           </div>
         </div>
       <% const blockGroups = blocks.reduce((groups, block) => {
@@ -37,6 +82,10 @@
             return groups;
           }, []); %>
       <div class="palette-panel">
+        <div class="player-tabs" role="tablist" aria-label="Player programs">
+          <button class="player-tab is-active" type="button" role="tab" aria-selected="true" data-player="0">Player 1</button>
+          <button class="player-tab" type="button" role="tab" aria-selected="false" data-player="1" hidden>Player 2</button>
+        </div>
         <nav class="block-category-nav" aria-label="Block categories">
           <% blockGroups.forEach((group) => { %>
             <button class="category-nav-button <%= group.type %>" type="button"
@@ -52,7 +101,7 @@
               <h2 id="category-<%= group.type %>" class="block-category-title"><%= group.type %></h2>
               <div class="block-category-items">
                 <% group.blocks.forEach((block) => { %>
-            <div class="block <%= block.type %> <%= block.name %>">
+            <div class="block <%= block.type %> <%= block.name %>" data-block-name="<%= block.name %>" data-block-type="<%= block.type %>" data-cost="<%= block.cost %>" data-wrap-kind="<%= block.name === 'repeat' || block.name === 'repeat until' ? block.name : '' %>">
                 <div class="block-header">
                 <span class="ticks" aria-label="Cost: <%= block.cost %>">
                     <% for (let tick = 0; tick < block.cost; tick += 1) { %>
@@ -91,4 +140,5 @@
     </main>
   </body>
   <script src="/blocking.js"></script>
+  <script src="/game.js"></script>
 </html>

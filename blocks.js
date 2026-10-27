@@ -51,7 +51,7 @@ module.exports = [
         name: "wait until",
         input: true,
         dropdown: false,
-        type: "wrap",
+        type: "control",
         follower: "",
         cost: 1
     },
