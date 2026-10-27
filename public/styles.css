@@ -536,13 +536,34 @@ h1 {
 }
 
 .setup-card {
-    width: min(460px, 100%);
+    width: min(600px, 100%);
     padding: 36px;
-    border: 1px solid #ffffff20;
-    border-radius: 22px;
-    background: linear-gradient(145deg, #1d2b45, #111725);
+    height: 20%;
+    border: 2px solid #081246;
+    border-radius: 5px;
+    background:#355389;
     box-shadow: 0 24px 70px #0009;
-    text-align: center;
+    align-items: center;
+    gap: 20px;
+    font-size: 30px;
+    display: flex;
+    flex-direction: row;
+    position: relative;
+    border-top-left-radius: 40px;
+    border-top-right-radius: 40px;
+}
+
+.setup-card::after {
+    content: '';
+    position: absolute;
+    width: 70px;
+    height: 12px;
+    bottom: -2px;
+    left: 30px;
+    background-color: #040508cd;
+    border-top-left-radius: 5px;
+    border-top-right-radius: 5px;
+    border: 2px solid #151b29dd;
 }
 
 .setup-card .eyebrow {
@@ -567,6 +588,7 @@ h1 {
     justify-content: center;
     gap: 12px;
     margin: 24px 0 16px;
+    font-size: 15px;
 }
 
 .mode-choice[data-mode="duel"] {
