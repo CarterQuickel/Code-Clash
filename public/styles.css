@@ -285,7 +285,7 @@ h1 {
     border: 2px solid #151b29dd;
 }
 
-.block:not(.start, .variable)::after {
+.block:not(.start, .variable, .mainTitle)::after {
     content: '';
     width: 40px;
     height: 8px;
@@ -538,68 +538,92 @@ h1 {
 .setup-card {
     width: min(600px, 100%);
     padding: 36px;
-    height: 20%;
-    border: 2px solid #081246;
-    border-radius: 5px;
-    background:#355389;
-    box-shadow: 0 24px 70px #0009;
     align-items: center;
-    gap: 20px;
-    font-size: 30px;
+    gap: 0px;
+    font-size: 25px;
     display: flex;
-    flex-direction: row;
-    position: relative;
-    border-top-left-radius: 40px;
-    border-top-right-radius: 40px;
+    flex-direction: column;
 }
 
-.setup-card::after {
-    content: '';
-    position: absolute;
-    width: 70px;
-    height: 12px;
-    bottom: -2px;
-    left: 30px;
-    background-color: #040508cd;
-    border-top-left-radius: 5px;
-    border-top-right-radius: 5px;
-    border: 2px solid #151b29dd;
-}
-
-.setup-card .eyebrow {
-    color: #65d8ff;
-    font-size: 0.72rem;
-    font-weight: 800;
-    letter-spacing: 0.16em;
-}
-
-.setup-card h1 {
-    margin: 12px 0;
-    font-size: clamp(2rem, 5vw, 3rem);
-}
-
-.setup-card p:not(.eyebrow) {
-    color: #bac7dc;
-    line-height: 1.5;
-}
-
-.mode-buttons {
+.setup-card .block:not(.variable) {
+    border-radius: 5px;
+    width: 80%;
+    height: 80px;
+    color: white;
     display: flex;
-    justify-content: center;
-    gap: 12px;
-    margin: 24px 0 16px;
-    font-size: 15px;
+    justify-content: flex-start;
+    font-weight: 400;
 }
 
-.mode-choice[data-mode="duel"] {
-    color: #fff;
-    background: #5268f2;
+.setup-card .block:not(.mainTitle, .credit, .variable) {
+    background-color: transparent;
+    border: 2px dashed white;
+    color: rgba(255, 255, 255, 0.329);
 }
 
-.setup-card small {
-    display: block;
-    color: #98a7be;
-    line-height: 1.5;
+.setup-card .block:hover {
+    background-color: rgb(86, 86, 182);
+}
+
+.mode-choice:hover {
+    background-color: rgb(66, 66, 212) !important;
+    border: 2px solid rgb(36, 36, 218) !important;
+    color: white !important;
+    animation: snap-in 0.1s forwards ease-in;
+}
+
+.setup-card .block:not(.mainTitle, .credit)::after {
+    opacity: 0;
+}
+
+.setup-card .credit::after {
+    background-color: rgb(194, 182, 14) !important;
+    border: 2px solid rgb(138, 138, 15);
+    border-bottom: none;
+}
+
+.setup-card .block:not(.mainTitle, .credit)::before {
+    opacity: 0;
+}
+
+.setup-card .block:not(.mainTitle, .credit):hover::after {
+    background-color: rgb(66, 66, 212) !important;
+    border: 2px solid rgb(36, 36, 218);
+    border-bottom: none;
+    opacity: 1;
+}
+
+.setup-card .block:not(.mainTitle, .credit):hover::before {
+    opacity: 1;
+}
+
+@keyframes snap-in {
+    0% {
+        transform: translateY(5px);
+    }
+    100% {
+        transform: translateY(0px);
+    }
+}
+
+.mainTitle {
+    background-color: rgb(194, 182, 14) !important;
+    border: 2px solid rgb(138, 138, 15);
+    border-top-left-radius: 20px !important;
+    border-top-right-radius: 20px !important;
+    cursor: default;
+}
+
+.credit {
+    background-color: rgb(194, 182, 14) !important;
+    border: 2px solid rgb(138, 138, 15);
+    cursor: default;
+    align-items: center;
+    cursor: default;
+}
+
+.setup-card .block.variable {
+    cursor: default;
 }
 
 .arena-screen {

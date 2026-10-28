@@ -30,7 +30,7 @@
                 </button>
               </div>
               <aside class="arena-minimap" aria-label="Arena minimap preview">
-                <span class="minimap-label">ARENA PREVIEW</span>
+                <span class="minimap-label">PREVIEW</span>
                 <canvas class="minimap-canvas" width="180" height="104" aria-hidden="true"></canvas>
               </aside>
               <div class="editor-controls">
@@ -42,11 +42,12 @@
               </div>
               <section class="game-setup" aria-labelledby="setup-title">
                 <div class="setup-card">
-                  <div id="setup-title">crank your tank</div>
-                  <div class="mode-buttons">
-                    <button class="mode-choice" type="button" data-mode="solo">Single player</button>
-                    <button class="mode-choice" type="button" data-mode="duel">Local 2-player</button>
+                  <div id="setup-title" class="mainTitle block">crank your tank</div>
+                  <div id="setup-title" class="credit block">by 
+                    <div class="block variable">carter quickel</div>
                   </div>
+                  <button class="mode-choice block" type="button" data-mode="solo">single player</button>
+                  <button class="mode-choice block" type="button" data-mode="duel">local 2-player</button>
                 </div>
               </section>
               <section class="arena-screen" hidden aria-label="Tank match">
